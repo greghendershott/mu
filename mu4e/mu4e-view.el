@@ -156,7 +156,14 @@ This is to determine what is the parent docid for embedded
 message extracted at some path.")
 
 (defvar mu4e-view-url-regexp
-  "\\(\\(https?\\://\\|mailto:\\)[-+\[:alnum:\].?_$%/+&#@!*~,:;=/()]+\\)"
+  (rx (or (seq ?<
+               (group-n 1
+                        (or (seq "http" (? "s") "://") "mailto:")
+                        (+? anything))
+               ?>)
+          (group-n 1
+                   (or (seq "http" (? "s") "://") "mailto:")
+                   (+ (or alnum (any "-+\.?_$%/+&#@!*~,:;=/()"))))))
   "Regexp that matches http:/https:/mailto: URLs; match-string 1
 will contain the matched URL, if any.")
 
@@ -800,6 +807,8 @@ Also number them so they can be opened using `mu4e-view-go-to-url'."
             (make-hash-table :size 32 :weakness nil))
       (goto-char (point-min))
       (while (re-search-forward mu4e-view-url-regexp nil t)
+        (unless (match-string 1) ;more-helpful message than array-p
+          (error "mu4e-view-url-regexp must have a match group 1"))
         (let* ((url (match-string 1))
                (url (replace-regexp-in-string (rx (any "\n\r")) "" url))
                (ov (make-overlay (match-beginning 1) (match-end 1))))
